@@ -45,12 +45,51 @@ const Persons = ({ personsToShow, handleDeleteOf }) => {
   )
 }
 
+const SuccessNotification  = ( {message} ) => {
+  const notiStyle = {
+    color: 'green',
+    fontStyle: 'bold',
+    background: 'lightgrey',
+    fontSize: 20,
+    border: '5px solid green',
+    padding: 10,
+    marginBottom: 10
+  }
 
+  if (message === null) {
+    return null
+  }
+  return (
+    <div style={notiStyle}>{message}</div>
+  )
+}
+
+const ErrorNotification  = ( {message} ) => {
+  const notiStyle = {
+    color: 'red',
+    fontStyle: 'bold',
+    background: 'lightgrey',
+    fontSize: 20,
+    border: '5px solid red',
+    padding: 10,
+    marginBottom: 10
+  }
+
+  if (message === null) {
+    return null
+  }
+  return (
+    <div style={notiStyle}>{message}</div>
+  )
+}
 const App = () => {
   const [persons, setPersons] = useState([])
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
+  const [successMsg, setSuccessMsg] = useState(null)
+  const [errorMsg, setErrorMsg] = useState(null)
+  
   useEffect(() => {
     personService.getAll().then(initialPersons => {
       setPersons(initialPersons)
@@ -82,8 +121,18 @@ const App = () => {
       if (window.confirm(`${newName} is already added to phonebook, replace the old number with a new one?`)) {
         const changedPerson = { ...existingPerson, number: newNumber}
         personService.update(existingPerson.id, changedPerson)
-          .then(returnedPerson => {
-            setPersons(persons.map(person => person.id !== existingPerson.id ? person: returnedPerson))
+          .then((updatedPerson) => {
+            setPersons(persons.map(person => person.id !== existingPerson.id ? person: updatedPerson))
+            setSuccessMsg(`Updated ${updatedPerson.name}`)
+            setTimeout(() => {
+              setSuccessMsg(null)
+            }, 5000)
+          })
+          .catch(error => {
+            setErrorMsg(`${changedPerson.name} has been removed from the server`)
+            setTimeout(() => {
+              setErrorMsg(null)
+            }, 5000)
           })
       }
     } else {
@@ -91,7 +140,11 @@ const App = () => {
       personService.create(newPerson)
         .then(returnedPerson => {
           setPersons(persons.concat(returnedPerson))
-        }) 
+          setSuccessMsg(`Added ${returnedPerson.name}`)
+          setTimeout(() => {
+            setSuccessMsg(null)
+          }, 5000)
+        })    
     }
     setNewName('')
     setNewNumber('')
@@ -107,11 +160,19 @@ const App = () => {
       .then(() => {
         setPersons(persons.filter(person => person.id !== id))
       })
+      .catch(() => {
+        setErrorMsg(`Error deleting ${name}.`)
+        setTimeout(() => {
+          setErrorMsg(null)
+        }, 5000)
+      })
   }
   
   return (
     <div>
       <h2>Phonebook</h2>
+      <SuccessNotification message={successMsg}/>
+      <ErrorNotification message={errorMsg}/>
       <Filter searchTerm={searchTerm} handleSearchTermChange={handleSearchTermChange}/>
       <h3>add a new</h3>
       <PersonForm handleSubmit={handleSubmit} newName={newName} handleNameChange={handleNameChange} newNumber={newNumber} handleNumberChange={handleNumberChange}/>
